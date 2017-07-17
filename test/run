@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -e
+
+root=`dirname "$0"`
+root=`realpath "$root"`
+cd "$root"
+
+faucet="require('$root/hooks.js'); require('`which faucet`');"
+
+function faucet {
+	args="$@"
+	node -e "$faucet" -- "" "$@"
+}
+
+cd "./test_basic"
+faucet --no-fingerprint
+diff ./dist/bundle.js ./expected.js
+rm -r ./dist
+cd -
+
+cd "./test_basic" # once more with fingerprinting
+faucet
+diff ./dist/bundle-ffb6e7a408007f33b8d4ed69cc27cc54.js ./expected.js
+rm -r ./dist
+cd -
+
+cd "./test_global_shim"
+faucet --no-fingerprint
+diff ./dist/bundle.js ./expected.js
+rm -r ./dist
+cd -
+
+cd "./test_transpilation"
+faucet --no-fingerprint
+diff ./dist/bundle.js ./expected.js
+rm -r ./dist
+cd -
+
+cd "./test_multi"
+faucet --no-fingerprint
+diff ./dist/foo.js ./expected_foo.js
+diff ./dist/bar.js ./expected_bar.js
+grep -q '"src/foo.js":"/assets/dist/foo.js"' ./dist/manifest.json
+grep -q '"src/bar.js":"/assets/dist/bar.js"' ./dist/manifest.json
+rm -r ./dist
+cd -
+
+cd "./test_manifest"
+faucet
+diff ./dist/manifest.json ./expected.json
+rm -r ./dist
+cd -
+
+cd "./test_custom_config"
+faucet -c assets.js --no-fingerprint
+diff ./dist/bundle.js ./expected.js
+rm -r ./dist
+cd -
+
+cd "./test_compact"
+faucet --no-fingerprint --compact
+diff ./dist/bundle.js ./expected.js
+rm -r ./dist
+cd -
